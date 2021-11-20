@@ -3,7 +3,7 @@ const { request } = require('./helpers')
 
 
 const { ASSETS_FROM, ASSETS_TO }  = process.env
-console.log(ASSETS_FROM, ASSETS_TO)
+
 const ASSET_CATEGORY = 'BNB'
 const filterAssets = ({ q }) => q === ASSET_CATEGORY 
 
