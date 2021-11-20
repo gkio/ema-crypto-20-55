@@ -1,9 +1,13 @@
 const WebSocket = require('ws');
-const {EMA} = require('trading-signals');
+const {
+  EMA
+} = require('trading-signals');
 const {
   request
 } = require('./helpers');
-const { Telegraf } = require('telegraf')
+const {
+  Telegraf
+} = require('telegraf')
 
 const bot = new Telegraf(process.env.BOT_TOKEN)
 const INTERVAL = '1m'
@@ -21,13 +25,12 @@ const normalizeAssetData = (assetData) => assetData[4]
 const fetchAssets = async (asset) => {
   const COUNT_CANDLES = 500
   const URL = getAssetUrl(COUNT_CANDLES, asset, INTERVAL)
-  const data =  await request(URL)
-  
+  const data = await request(URL)
+
   return data.map(normalizeAssetData)
 }
 
-let shoudlBuy = false
-let shoudlSell = true
+
 
 const getEma = data => {
   const fromEma = new EMA(20)
@@ -44,43 +47,53 @@ const getEma = data => {
 }
 
 
-const onMessage = (message, SYMBOL, closes ,prevEmaFrom, prevEmaTo) => {
-  if (!message) return;
+const onMessageWrapper = (SYMBOL, defaultCloses) => {
+  let closes = defaultCloses
+  let [prevEmaFrom, prevEmaTo] = getEma(closes)
+  let shoudlBuy = true
+  let shoudlSell = false
 
-  const msg = JSON.parse(message)
+  const onMessage = (message) => {
+    if (!message) return;
 
-  const candle = msg.k
-  const isCandleClosed = candle.x
-  const close = candle.c
+    const msg = JSON.parse(message)
 
-  closes = closes.slice(-499)
-  closes.push(close)
+    const candle = msg.k
+    const isCandleClosed = candle.x
+    const close = candle.c
 
-  if(isCandleClosed) {
-    const [emaFrom, emaTo] = getEma(closes)
-    console.log(`${SYMBOL} emaFrom: ${emaFrom} emaTo: ${emaTo} at price ${close}`)
-    if(emaFrom > emaTo && prevEmaFrom && shoudlBuy) {
-      shoudlBuy = true
-      if(prevEmaFrom < prevEmaTo) {
-        bot.sendMessage(process.env.CHAT_ID, `BUY ${SYMBOL} at ${close}`)
+    closes = closes.slice(-499)
+    closes.push(close)
+
+    if (isCandleClosed) {
+      const [emaFrom, emaTo] = getEma(closes)
+      // console.log(`${SYMBOL} emaFrom: ${emaFrom} emaTo: ${emaTo} at price ${close}`)
+      console.log(SYMBOL, prevEmaFrom, prevEmaTo)
+      if (emaFrom > emaTo && prevEmaFrom && shoudlBuy) {
+        shoudlBuy = false
+        shoudlSell = true
+        if (prevEmaFrom < prevEmaTo) {
+          bot.sendMessage(process.env.CHAT_ID, `BUY ${SYMBOL} at ${close}`)
+        }
       }
-    }
 
-    prevEmaTo = emaTo
-    prevEmaFrom = emaFrom
+      prevEmaTo = emaTo
+      prevEmaFrom = emaFrom
+    }
   }
 
-
+  return onMessage
 }
+
+
+
 
 const listener = async (symbol) => {
   console.log(`listening symbol: [${symbol}]`)
   const URL = getSocketUrl(symbol, INTERVAL)
-  const closes = await fetchAssets(symbol)
-  const prevEmaFrom = null
-  const prevEmaTo = null
+  let closes = await fetchAssets(symbol)
   const ws = new WebSocket(URL)
-  ws.on('message', (msg) => onMessage(msg, symbol, closes ,prevEmaFrom, prevEmaTo))
+  ws.on('message', onMessageWrapper(symbol, closes))
 }
 
 module.exports = listener
