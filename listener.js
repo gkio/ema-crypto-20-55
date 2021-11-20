@@ -30,8 +30,6 @@ const fetchAssets = async (asset) => {
   return data.map(normalizeAssetData)
 }
 
-
-
 const getEma = data => {
   const fromEma = new EMA(20)
   const toEma = new EMA(55)
@@ -45,7 +43,6 @@ const getEma = data => {
   const finalToEma = toEma.getResult().toFixed(15)
   return [finalFromEma, finalToEma]
 }
-
 
 const onMessageWrapper = (SYMBOL, defaultCloses) => {
   let closes = defaultCloses
@@ -67,12 +64,11 @@ const onMessageWrapper = (SYMBOL, defaultCloses) => {
 
     if (isCandleClosed) {
       const [emaFrom, emaTo] = getEma(closes)
-      // console.log(`${SYMBOL} emaFrom: ${emaFrom} emaTo: ${emaTo} at price ${close}`)
-      console.log(SYMBOL, prevEmaFrom, prevEmaTo)
+      console.log(`${SYMBOL} emaFrom: ${emaFrom} emaTo: ${emaTo} at price ${close}`)
       if (emaFrom > emaTo && prevEmaFrom && shoudlBuy) {
-        shoudlBuy = false
-        shoudlSell = true
         if (prevEmaFrom < prevEmaTo) {
+          shoudlBuy = false
+          shoudlSell = true
           bot.sendMessage(process.env.CHAT_ID, `BUY ${SYMBOL} at ${close}`)
         }
       }
@@ -84,9 +80,6 @@ const onMessageWrapper = (SYMBOL, defaultCloses) => {
 
   return onMessage
 }
-
-
-
 
 const listener = async (symbol) => {
   console.log(`listening symbol: [${symbol}]`)
