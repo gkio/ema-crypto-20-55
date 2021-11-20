@@ -64,12 +64,15 @@ const onMessageWrapper = (SYMBOL, defaultCloses) => {
 
     if (isCandleClosed) {
       const [emaFrom, emaTo] = getEma(closes)
-      console.log(`${SYMBOL} emaFrom: ${emaFrom} emaTo: ${emaTo} at price ${close}`)
+      console.log(``)
       if (emaFrom > emaTo && prevEmaFrom && shoudlBuy) {
         if (prevEmaFrom < prevEmaTo) {
           shoudlBuy = false
           shoudlSell = true
-          bot.sendMessage(process.env.CHAT_ID, `BUY ${SYMBOL} at ${close}`)
+          bot.telegram.sendMessage(process.env.CHAT_ID, `
+📈 [BUY] ${SYMBOL} emaFrom: ${emaFrom} emaTo: ${emaTo} at price ${close}
+Binance: https://www.binance.com/en/trade/${SYMBOL}?layout=basic
+          `)
         }
       }
 
